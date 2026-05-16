@@ -15,7 +15,7 @@ The bundled `faah.wav` is from `kiron0/faah`, which is MIT licensed. See `NOTICE
 From GitHub once pushed:
 
 ```bash
-pipx install git+https://github.com/apestoic/faah-terminal.git
+pipx install git+https://github.com/AlbanBeluli/faah-terminal.git
 ```
 
 From a local checkout:
