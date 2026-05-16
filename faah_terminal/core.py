@@ -230,6 +230,28 @@ _faah_precmd() {
 }
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _faah_precmd
+
+# faah-terminal: auto-wrap agent CLIs so `hermes` behaves like `faah run -- hermes`.
+_faah_run_wrapped() {
+  local faah_name="$1"
+  shift
+  local faah_path
+  faah_path="$(whence -p "$faah_name" 2>/dev/null)" || return 127
+  if [[ -n "$FAAH_RUNNING" ]]; then
+    command "$faah_path" "$@"
+  else
+    FAAH_RUNNING=1 command faah run -- "$faah_path" "$@"
+    local faah_code=$?
+    unset FAAH_RUNNING
+    return $faah_code
+  fi
+}
+for faah_name in ${(z):-${FAAH_WRAP_COMMANDS:-hermes openclaw claude codex}}; do
+  if [[ -n "$(whence -p "$faah_name" 2>/dev/null)" ]]; then
+    eval "$faah_name() { _faah_run_wrapped $faah_name \"\$@\" }"
+  fi
+done
+unset faah_name
 '''
     if shell == "bash":
         return r'''# faah-terminal: alert when an interactive command exits non-zero
@@ -247,6 +269,28 @@ if [[ -n "$PROMPT_COMMAND" ]]; then
 else
   PROMPT_COMMAND="_faah_prompt_command"
 fi
+
+# faah-terminal: auto-wrap agent CLIs so `hermes` behaves like `faah run -- hermes`.
+_faah_run_wrapped() {
+  local faah_name="$1"
+  shift
+  local faah_path
+  faah_path="$(type -P "$faah_name" 2>/dev/null)" || return 127
+  if [[ -n "$FAAH_RUNNING" ]]; then
+    command "$faah_path" "$@"
+  else
+    FAAH_RUNNING=1 command faah run -- "$faah_path" "$@"
+    local faah_code=$?
+    unset FAAH_RUNNING
+    return $faah_code
+  fi
+}
+for faah_name in ${FAAH_WRAP_COMMANDS:-hermes openclaw claude codex}; do
+  if [[ -n "$(type -P "$faah_name" 2>/dev/null)" ]]; then
+    eval "$faah_name() { _faah_run_wrapped $faah_name \"\$@\"; }"
+  fi
+done
+unset faah_name
 '''
     if shell == "fish":
         return r'''# faah-terminal: alert when an interactive command exits non-zero
@@ -259,6 +303,39 @@ function _faah_postexec --on-event fish_postexec
     set -e FAAH_RUNNING
   end
 end
+
+# faah-terminal: auto-wrap agent CLIs so `hermes` behaves like `faah run -- hermes`.
+function _faah_run_wrapped
+  set -l faah_name $argv[1]
+  set -e argv[1]
+  set -l faah_path (command -v $faah_name 2>/dev/null)
+  if test -z "$faah_path"
+    return 127
+  end
+  if test -n "$FAAH_RUNNING"
+    command $faah_path $argv
+  else
+    set -gx FAAH_RUNNING 1
+    command faah run -- $faah_path $argv
+    set -l faah_code $status
+    set -e FAAH_RUNNING
+    return $faah_code
+  end
+end
+set -l faah_wrap_commands $FAAH_WRAP_COMMANDS
+if test -z "$faah_wrap_commands"
+  set faah_wrap_commands hermes openclaw claude codex
+else
+  set faah_wrap_commands (string split ' ' -- $faah_wrap_commands)
+end
+for faah_name in $faah_wrap_commands
+  if command -v $faah_name >/dev/null 2>&1
+    function $faah_name --inherit-variable faah_name
+      _faah_run_wrapped $faah_name $argv
+    end
+  end
+end
+set -e faah_name faah_wrap_commands
 '''
     raise ValueError(f"unsupported shell: {shell}")
 

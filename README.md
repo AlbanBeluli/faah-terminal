@@ -56,9 +56,34 @@ false
 # FAAH
 ```
 
+## Agent CLIs
+
+After install and shell reload, supported agent CLIs are wrapped automatically:
+
+```bash
+hermes
+openclaw
+claude
+codex
+```
+
+Those behave as if you typed `faah run -- ...`, but without the prefix. Faah still preserves the terminal TTY, so prompts, colors, and keybindings keep working.
+
+To change which commands are auto-wrapped, set `FAAH_WRAP_COMMANDS` before the installer block in your shell rc file:
+
+```bash
+export FAAH_WRAP_COMMANDS="hermes openclaw claude codex"
+```
+
+To disable auto-wrapping and keep only exit-code alerts from the shell hook:
+
+```bash
+export FAAH_WRAP_COMMANDS=""
+```
+
 ## Wrap a command explicitly
 
-Useful for Hermes/Codex/Claude launchers, long jobs, scripts, and CI-like flows:
+Still useful for one-off long jobs, scripts, and CI-like flows:
 
 ```bash
 faah run -- pytest
@@ -68,8 +93,6 @@ faah run -- codex
 faah run -- hermes
 faah run -- openclaw
 ```
-
-For agent CLIs, either launch them through `faah run -- hermes` / `faah run -- openclaw`, or rely on the installed shell hook so Faah plays when the agent command exits non-zero. `faah run` preserves the terminal TTY for interactive agent UIs, so prompts, colors, and keybindings keep working.
 
 `faah run` alerts on either non-zero exit or scary output by default.
 
