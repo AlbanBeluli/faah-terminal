@@ -69,7 +69,7 @@ faah run -- hermes
 faah run -- openclaw
 ```
 
-For agent CLIs, either launch them through `faah run -- hermes` / `faah run -- openclaw`, or rely on the installed shell hook so Faah plays when the agent command exits non-zero.
+For agent CLIs, either launch them through `faah run -- hermes` / `faah run -- openclaw`, or rely on the installed shell hook so Faah plays when the agent command exits non-zero. `faah run` preserves the terminal TTY for interactive agent UIs, so prompts, colors, and keybindings keep working.
 
 `faah run` alerts on either non-zero exit or scary output by default.
 

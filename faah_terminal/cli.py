@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
+import os
+import pty
+import select
+import signal
 import subprocess
 import sys
+import termios
+import tty
 from pathlib import Path
 
 from .core import (
@@ -100,6 +107,24 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run_command(command: list[str], config: Config) -> int:
+    if _should_use_pty():
+        return run_command_pty(command, config)
+    return run_command_piped(command, config)
+
+
+def _should_use_pty() -> bool:
+    return os.name != "nt" and sys.stdin.isatty() and sys.stdout.isatty() and sys.stderr.isatty()
+
+
+def _finish_run(code: int, text: str, config: Config) -> int:
+    matched = output_matches(text, config)
+    if should_alert(code, matched, config):
+        reason = f"exit {code}" if code else "matched error output"
+        play_alert(reason, config=config)
+    return code
+
+
+def run_command_piped(command: list[str], config: Config) -> int:
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
     collected: list[str] = []
     assert proc.stdout is not None
@@ -111,12 +136,85 @@ def run_command(command: list[str], config: Config) -> int:
         proc.terminate()
         raise
     code = proc.wait()
-    text = "".join(collected)
-    matched = output_matches(text, config)
-    if should_alert(code, matched, config):
-        reason = f"exit {code}" if code else "matched error output"
-        play_alert(reason, config=config)
-    return code
+    return _finish_run(code, "".join(collected), config)
+
+
+def run_command_pty(command: list[str], config: Config) -> int:
+    master_fd, slave_fd = pty.openpty()
+    stdin_fd = sys.stdin.fileno()
+    stdout_fd = sys.stdout.fileno()
+    old_tty = termios.tcgetattr(stdin_fd)
+    old_winch_handler = signal.getsignal(signal.SIGWINCH)
+    collected = bytearray()
+    proc: subprocess.Popen[bytes] | None = None
+
+    def resize_child(_signum: int | None = None, _frame: object | None = None) -> None:
+        try:
+            size = fcntl.ioctl(stdin_fd, termios.TIOCGWINSZ, b"\0" * 8)
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, size)
+        except OSError:
+            pass
+
+    try:
+        resize_child()
+        signal.signal(signal.SIGWINCH, resize_child)
+        tty.setraw(stdin_fd)
+        proc = subprocess.Popen(command, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
+        os.close(slave_fd)
+        slave_fd = -1
+
+        while True:
+            read_fds = [master_fd, stdin_fd]
+            ready, _, _ = select.select(read_fds, [], [], 0.1)
+
+            if master_fd in ready:
+                try:
+                    data = os.read(master_fd, 4096)
+                except OSError:
+                    data = b""
+                if data:
+                    collected.extend(data)
+                    os.write(stdout_fd, data)
+                elif proc.poll() is not None:
+                    break
+
+            if stdin_fd in ready:
+                data = os.read(stdin_fd, 4096)
+                if data:
+                    os.write(master_fd, data)
+
+            if proc.poll() is not None:
+                # Drain anything still buffered after process exit.
+                while True:
+                    ready, _, _ = select.select([master_fd], [], [], 0)
+                    if not ready:
+                        break
+                    try:
+                        data = os.read(master_fd, 4096)
+                    except OSError:
+                        break
+                    if not data:
+                        break
+                    collected.extend(data)
+                    os.write(stdout_fd, data)
+                break
+    except KeyboardInterrupt:
+        if proc and proc.poll() is None:
+            proc.terminate()
+        raise
+    finally:
+        signal.signal(signal.SIGWINCH, old_winch_handler)
+        termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_tty)
+        if slave_fd != -1:
+            os.close(slave_fd)
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
+
+    assert proc is not None
+    code = proc.wait()
+    return _finish_run(code, collected.decode(errors="replace"), config)
 
 
 def handle_config(args: argparse.Namespace, config: Config) -> int:
