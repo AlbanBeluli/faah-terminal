@@ -34,7 +34,7 @@ packages = ["faah_terminal"]
 artifacts = ["faah_terminal/assets/faah.wav"]
 
 [tool.hatch.build.targets.sdist]
-include = ["faah_terminal", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
+include = ["faah_terminal", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.toml", "install.sh"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

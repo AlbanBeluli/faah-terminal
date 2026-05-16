@@ -10,50 +10,44 @@ Original VS Code extension and sound:
 
 The bundled `faah.wav` is from `kiron0/faah`, which is MIT licensed. See `NOTICE`.
 
-## Install globally
+## Install
 
-From GitHub once pushed:
+One command. Installs the global `faah` CLI, adds the shell hook, and plays a test sound:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AlbanBeluli/faah-terminal/main/install.sh | bash
+```
+
+Then open a new terminal, or reload your shell:
+
+```bash
+exec $SHELL
+```
+
+After this, any interactive command exiting non-zero triggers the sound.
+
+```bash
+false
+# FAAH
+```
+
+CLI only, no shell rc edit:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AlbanBeluli/faah-terminal/main/install.sh | FAAH_NO_HOOK=1 bash
+```
+
+Force a shell if auto-detection is wrong:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AlbanBeluli/faah-terminal/main/install.sh | FAAH_SHELL=zsh bash
+```
+
+Manual install if you prefer:
 
 ```bash
 pipx install git+https://github.com/AlbanBeluli/faah-terminal.git
 ```
-
-From a local checkout:
-
-```bash
-pipx install /path/to/faah-terminal
-```
-
-Without pipx:
-
-```bash
-python3 -m pip install --user /path/to/faah-terminal
-```
-
-## Enable in your shell
-
-For zsh:
-
-```bash
-faah init zsh >> ~/.zshrc
-exec zsh
-```
-
-For bash:
-
-```bash
-faah init bash >> ~/.bashrc
-exec bash
-```
-
-For fish:
-
-```fish
-faah init fish >> ~/.config/fish/config.fish
-exec fish
-```
-
-After this, any interactive command exiting non-zero triggers the sound.
 
 Example:
 
