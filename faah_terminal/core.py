@@ -221,10 +221,10 @@ def init_snippet(shell: str = "zsh") -> str:
     if shell == "zsh":
         return r'''# faah-terminal: alert when an interactive command exits non-zero
 _faah_precmd() {
-  local status=$?
+  local faah_status=$?
   if [[ -n "$FAAH_RUNNING" ]]; then return; fi
-  if [[ $status -ne 0 ]]; then
-    FAAH_RUNNING=1 command faah alert --reason "exit $status" >/dev/null 2>&1
+  if [[ $faah_status -ne 0 ]]; then
+    FAAH_RUNNING=1 command faah alert --reason "exit $faah_status" >/dev/null 2>&1
     unset FAAH_RUNNING
   fi
 }
@@ -234,13 +234,13 @@ add-zsh-hook precmd _faah_precmd
     if shell == "bash":
         return r'''# faah-terminal: alert when an interactive command exits non-zero
 _faah_prompt_command() {
-  local status=$?
-  if [[ -n "$FAAH_RUNNING" ]]; then return $status; fi
-  if [[ $status -ne 0 ]]; then
-    FAAH_RUNNING=1 command faah alert --reason "exit $status" >/dev/null 2>&1
+  local faah_status=$?
+  if [[ -n "$FAAH_RUNNING" ]]; then return $faah_status; fi
+  if [[ $faah_status -ne 0 ]]; then
+    FAAH_RUNNING=1 command faah alert --reason "exit $faah_status" >/dev/null 2>&1
     unset FAAH_RUNNING
   fi
-  return $status
+  return $faah_status
 }
 if [[ -n "$PROMPT_COMMAND" ]]; then
   PROMPT_COMMAND="_faah_prompt_command; $PROMPT_COMMAND"
@@ -251,11 +251,11 @@ fi
     if shell == "fish":
         return r'''# faah-terminal: alert when an interactive command exits non-zero
 function _faah_postexec --on-event fish_postexec
-  set -l status $status
+  set -l faah_status $status
   if test -n "$FAAH_RUNNING"; return; end
-  if test $status -ne 0
+  if test $faah_status -ne 0
     set -gx FAAH_RUNNING 1
-    command faah alert --reason "exit $status" >/dev/null 2>&1
+    command faah alert --reason "exit $faah_status" >/dev/null 2>&1
     set -e FAAH_RUNNING
   end
 end
