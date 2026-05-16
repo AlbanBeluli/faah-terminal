@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "faah-terminal"
+version = "0.1.0"
+description = "Terminal error drama alarm: play a Faah-style alert on failed commands or scary output."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Ape Stoic" }]
+keywords = ["terminal", "cli", "errors", "notifications", "sound", "zsh", "bash"]
+classifiers = [
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development",
+  "Topic :: Terminals",
+]
+
+[project.urls]
+Homepage = "https://github.com/apestoic/faah-terminal"
+Repository = "https://github.com/apestoic/faah-terminal"
+Issues = "https://github.com/apestoic/faah-terminal/issues"
+
+[project.scripts]
+faah = "faah_terminal.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["faah_terminal"]
+artifacts = ["faah_terminal/assets/faah.wav"]
+
+[tool.hatch.build.targets.sdist]
+include = ["faah_terminal", "tests", "README.md", "LICENSE", "NOTICE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
