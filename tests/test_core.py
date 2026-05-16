@@ -1,4 +1,4 @@
-from faah_terminal.core import Config, init_snippet, output_matches, should_alert
+from faah_terminal.core import Config, init_snippet, output_matches, play_alert, should_alert
 
 
 def test_output_matches_default_error():
@@ -27,3 +27,12 @@ def test_init_snippet_mentions_faah():
     assert "faah alert" in init_snippet("zsh")
     assert "PROMPT_COMMAND" in init_snippet("bash")
     assert "fish_postexec" in init_snippet("fish")
+
+
+def test_forced_alert_does_not_consume_cooldown(monkeypatch, tmp_path):
+    monkeypatch.setattr("faah_terminal.core.STATE_PATH", tmp_path / "state.json")
+    monkeypatch.setattr("faah_terminal.core._play_sound", lambda sound: True)
+
+    cfg = Config(cooldown_seconds=60, visual=False)
+    assert play_alert("installer test", config=cfg, force=True)
+    assert play_alert("first real failure", config=cfg)

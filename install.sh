@@ -59,16 +59,27 @@ install_shell_hook() {
   success "Installed ${shell_name} hook in ${rc_file}"
 }
 
+pipx_install() {
+  local pipx_cmd=("$@")
+  if "${pipx_cmd[@]}" install --force "git+${REPO_URL}"; then
+    return 0
+  fi
+
+  warn "pipx install hit an existing/broken venv; reinstalling cleanly"
+  "${pipx_cmd[@]}" uninstall faah-terminal >/dev/null 2>&1 || true
+  "${pipx_cmd[@]}" install "git+${REPO_URL}"
+}
+
 install_python_package() {
   if need_cmd pipx; then
     info "Installing faah-terminal with pipx"
-    pipx install --force "git+${REPO_URL}"
+    pipx_install pipx
     return
   fi
 
   if python3 -m pipx --version >/dev/null 2>&1; then
     info "Installing faah-terminal with python3 -m pipx"
-    python3 -m pipx install --force "git+${REPO_URL}"
+    pipx_install python3 -m pipx
     return
   fi
 

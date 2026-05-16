@@ -164,7 +164,7 @@ def play_alert(reason: str = "error", config: Config | None = None, force: bool 
         sys.stderr.flush()
 
     played = _play_sound(config.sound)
-    if played:
+    if played and not force:
         mark_alerted()
     return played
 
