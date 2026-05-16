@@ -66,7 +66,10 @@ faah run -- npm test
 faah run -- claude
 faah run -- codex
 faah run -- hermes
+faah run -- openclaw
 ```
+
+For agent CLIs, either launch them through `faah run -- hermes` / `faah run -- openclaw`, or rely on the installed shell hook so Faah plays when the agent command exits non-zero.
 
 `faah run` alerts on either non-zero exit or scary output by default.
 
